@@ -1,0 +1,45 @@
+<svg width="1080" height="1920" viewBox="0 0 1080 1920" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="bg" x1="0%" y1="0%" x2="0%" y2="100%">
+<stop offset="0%" stop-color="#1A0B2E"/>
+<stop offset="100%" stop-color="#0D0221"/>
+</linearGradient>
+<linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#3C3489"/>
+<stop offset="100%" stop-color="#1A0B2E"/>
+</linearGradient>
+</defs>
+
+<rect width="1080" height="1920" fill="url(#bg)"/>
+
+<circle cx="150" cy="180" r="3" fill="#F4C430" opacity="0.6"/>
+<circle cx="900" cy="140" r="2.5" fill="#F4C430" opacity="0.5"/>
+<circle cx="950" cy="320" r="3" fill="#F4C430" opacity="0.4"/>
+<circle cx="100" cy="500" r="2" fill="#F4C430" opacity="0.5"/>
+<circle cx="980" cy="600" r="2.5" fill="#F4C430" opacity="0.5"/>
+
+<text x="80" y="150" font-family="Georgia, serif" font-style="italic" font-size="44" fill="#F4C430">Таро дня</text>
+<circle cx="990" cy="130" r="18" fill="none" stroke="#B4A9D6" stroke-width="2"/>
+
+<g transform="translate(540, 850)">
+<rect x="-180" y="-280" width="360" height="560" rx="24" fill="url(#cardGrad)" stroke="#D4AF37" stroke-width="4"/>
+<circle cx="0" cy="-130" r="30" fill="none" stroke="#F4C430" stroke-width="3"/>
+<circle cx="0" cy="-130" r="10" fill="#F4C430"/>
+<text x="0" y="-10" font-family="Georgia, serif" font-size="52" fill="#F5F0E8" text-anchor="middle">Звезда</text>
+<text x="0" y="40" font-family="sans-serif" font-size="24" fill="#B4A9D6" text-anchor="middle" letter-spacing="4">XVII</text>
+</g>
+
+<text x="540" y="1290" font-family="Georgia, serif" font-style="italic" font-size="32" fill="#F5F0E8" text-anchor="middle">
+<tspan x="540" dy="0">Сегодня вселенная открывает</tspan>
+<tspan x="540" dy="46">тебе путь надежды</tspan>
+</text>
+
+<rect x="420" y="1370" width="240" height="60" rx="30" fill="#F4C430" opacity="0.12" stroke="#D4AF37" stroke-width="1.5"/>
+<text x="540" y="1408" font-family="sans-serif" font-size="26" fill="#F4C430" text-anchor="middle">5 дней подряд</text>
+
+<rect x="80" y="1550" width="440" height="90" rx="18" fill="none" stroke="#D4AF37" stroke-width="2.5"/>
+<text x="300" y="1605" font-family="sans-serif" font-size="30" fill="#F4C430" text-anchor="middle">Поделиться</text>
+
+<rect x="560" y="1550" width="440" height="90" rx="18" fill="#D4AF37"/>
+<text x="780" y="1605" font-family="sans-serif" font-size="30" fill="#1A0B2E" text-anchor="middle">Ещё расклады</text>
+</svg>
