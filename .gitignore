@@ -1,0 +1,18 @@
+# Секреты — никогда не должны попадать в публичный репозиторий
+*.jks
+*.keystore
+key.properties
+*.pem
+pepk_out.zip
+pepk.jar
+
+# Сборка и служебные файлы
+build/
+.dart_tool/
+.idea/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+android/local.properties
+android/gradle.properties
+.DS_Store
