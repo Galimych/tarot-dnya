@@ -210,4 +210,4 @@ final List<TarotCard> majorArcana = [
 final List<TarotCard> allCards = [...majorArcana, ...minorArcana];
 
 TarotCard cardByNumber(int number) =>
-    allCards.firstWhere((c) => c.number == number);
+    allCards.firstWhere((c) => c.number == number, orElse: () => allCards.first);
