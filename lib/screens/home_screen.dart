@@ -7,6 +7,7 @@ import '../services/moon_phase.dart';
 import '../services/storage_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/flip_card.dart';
+import '../widgets/loading_screen.dart';
 import 'history_screen.dart';
 import 'spreads_screen.dart';
 import 'collection_screen.dart';
@@ -33,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showGuessPrompt = false;
   List<TarotCard>? _guessOptions;
   bool? _lastGuessCorrect;
+  String? _loadError;
 
   @override
   void initState() {
@@ -41,23 +43,31 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _load() async {
-    // Важно проверить ДО создания карты — иначе всегда будет "уже показана".
-    final alreadyShownToday = widget.storage.isTodayCardAlreadyRevealed();
-    final card = await widget.storage.getOrCreateTodayCard();
+    try {
+      // Важно проверить ДО создания карты — иначе всегда будет "уже показана".
+      final alreadyShownToday = widget.storage.isTodayCardAlreadyRevealed();
+      final card = await widget.storage.getOrCreateTodayCard();
+      final options = alreadyShownToday ? null : _buildGuessOptions(card);
+      final streak = widget.storage.getStreak();
+      if (!mounted) return;
 
-    setState(() {
-      _card = card;
-      _streak = widget.storage.getStreak();
-      _isRevealed = alreadyShownToday;
-      _showGuessPrompt = !alreadyShownToday;
-      if (_showGuessPrompt) {
-        _guessOptions = _buildGuessOptions(card);
+      setState(() {
+        _card = card;
+        _streak = streak;
+        _isRevealed = alreadyShownToday;
+        _showGuessPrompt = !alreadyShownToday;
+        _guessOptions = options;
+        _loadError = null;
+      });
+
+      final milestone = widget.storage.justReachedMilestone;
+      if (milestone != null && mounted) {
+        _showMilestoneCelebration(milestone);
       }
-    });
-
-    final milestone = widget.storage.justReachedMilestone;
-    if (milestone != null && mounted) {
-      _showMilestoneCelebration(milestone);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadError = 'Не удалось загрузить карту дня: $e');
+      }
     }
   }
 
@@ -139,8 +149,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     if (_card == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppColors.gold)),
+      return LoadingScreen(
+        message: _loadError,
+        onRetry: _loadError == null
+            ? null
+            : () {
+                setState(() => _loadError = null);
+                _load();
+              },
       );
     }
 
