@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' show PlatformDispatcher;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -7,12 +8,29 @@ import 'services/ads_service.dart';
 import 'services/notifications_service.dart';
 import 'services/storage_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/loading_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // Без этой инициализации DateFormat('d MMMM', 'ru') в истории карт
-  // выбрасывает исключение и приводит к пустому серому экрану в release-сборке.
-  await initializeDateFormatting('ru', null);
+
+  // Ловим необработанные ошибки и показываем их на экране загрузки —
+  // иначе при сбое приложение молча зависает с бесконечным кружком.
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    reportError(details.exceptionAsString());
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    reportError(error);
+    return true;
+  };
+
+  try {
+    // Без этой инициализации DateFormat('d MMMM', 'ru') в истории карт
+    // выбрасывает исключение и приводит к пустому серому экрану.
+    await initializeDateFormatting('ru', null);
+  } catch (e) {
+    reportError(e);
+  }
   runApp(const TarotApp());
 }
 
@@ -23,7 +41,7 @@ class _AppServices {
   _AppServices(this.storage, this.ads);
 
   static Future<_AppServices> load() async {
-    final storage = await StorageService.create();
+    final storage = await StorageService.create().timeout(const Duration(seconds: 15));
     final ads = AdsService();
     // Инициализация рекламы не должна блокировать запуск приложения —
     // если SDK не поднимется (нет сети, регион и т.п.), MVP продолжает
@@ -36,8 +54,28 @@ class _AppServices {
   }
 }
 
-class TarotApp extends StatelessWidget {
+class TarotApp extends StatefulWidget {
   const TarotApp({super.key});
+
+  @override
+  State<TarotApp> createState() => _TarotAppState();
+}
+
+class _TarotAppState extends State<TarotApp> {
+  // Задача загрузки создаётся ОДИН раз. Раньше она создавалась прямо в build
+  // и могла стартовать заново при любой перерисовке.
+  late Future<_AppServices> _servicesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _servicesFuture = _AppServices.load();
+  }
+
+  void _retry() {
+    lastErrorNotifier.value = null;
+    setState(() => _servicesFuture = _AppServices.load());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,13 +92,16 @@ class TarotApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       home: FutureBuilder<_AppServices>(
-        future: _AppServices.load(),
+        future: _servicesFuture,
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Scaffold(
-              backgroundColor: Color(0xFF0D0221),
-              body: Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))),
+          if (snapshot.hasError) {
+            return LoadingScreen(
+              message: 'Не удалось запустить приложение: ${snapshot.error}',
+              onRetry: _retry,
             );
+          }
+          if (!snapshot.hasData) {
+            return const LoadingScreen();
           }
           final services = snapshot.data!;
           return HomeScreen(storage: services.storage, ads: services.ads);
