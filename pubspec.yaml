@@ -1,7 +1,7 @@
 name: tarot_dnya
 description: "Таро дня — ежедневные карты и предсказания"
 publish_to: 'none'
-version: 1.0.0+29
+version: 1.0.0+30
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -36,3 +36,8 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+
+# Версии плагина хранилища 2.4.26+ (Kotlin Pigeon) на нашей сборке падают при
+# запуске с NoSuchMethodError. Берём последнюю версию старой реализации.
+dependency_overrides:
+  shared_preferences_android: '>=2.4.0 <2.4.26'
