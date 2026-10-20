@@ -1,5 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
+import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
 /// Ежедневное напоминание "Твоя карта дня готова" — полностью локальное,
@@ -52,12 +52,15 @@ class NotificationsService {
     );
   }
 
+  /// Ближайший момент "час:минута" по ЛОКАЛЬНОМУ времени телефона, переведённый
+  /// в UTC. Раньше время бралось в UTC по умолчанию, и напоминание приходило
+  /// не в 10:00 по местному времени, а в 10:00 по Гринвичу.
   tz.TZDateTime _nextInstanceOfTime(int hour, int minute) {
-    final now = tz.TZDateTime.now(tz.local);
-    var scheduled = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
-    if (scheduled.isBefore(now)) {
-      scheduled = scheduled.add(const Duration(days: 1));
+    final now = DateTime.now();
+    var local = DateTime(now.year, now.month, now.day, hour, minute);
+    if (local.isBefore(now)) {
+      local = local.add(const Duration(days: 1));
     }
-    return scheduled;
+    return tz.TZDateTime.from(local, tz.UTC);
   }
 }
