@@ -92,6 +92,7 @@ class NatalChart {
   final String? houseNote;
   final List<int> elementCounts;
   final List<ChartAspect> aspects;
+  final List<String> warnings; // что не удалось рассчитать и почему
 
   const NatalChart({
     required this.planets,
@@ -103,6 +104,7 @@ class NatalChart {
     required this.houseNote,
     required this.elementCounts,
     required this.aspects,
+    this.warnings = const [],
   });
 
   bool get hasHouses => houseCusps != null && ascendant != null;
@@ -299,19 +301,34 @@ class NatalChartService {
     }
 
     // Узел, Лилит и Хирон — каждый в отдельной защите: если для какой-то
-    // точки не хватит данных, основная карта всё равно построится.
+    // точки не хватит данных, основная карта всё равно построится, а причина
+    // будет показана на экране.
     final extras = <PlanetPosition>[];
+    final warnings = <String>[];
     for (final (body, name, canRetro) in _extras) {
       try {
         final lon = _longitude(jd, body);
+        final isNode = name == 'Северный узел';
         extras.add(_position(
           name,
           '',
           lon,
           cusps: cusps,
-          retrograde: canRetro && _isRetrograde(jd, body),
+          // Средний лунный узел всегда движется «назад» по зодиаку.
+          retrograde: isNode || (canRetro && _isRetrograde(jd, body)),
         ));
-      } catch (_) {}
+        if (isNode) {
+          extras.add(_position(
+            'Южный узел',
+            '',
+            (lon + 180) % 360,
+            cusps: cusps,
+            retrograde: true,
+          ));
+        }
+      } catch (e) {
+        warnings.add('$name: $e');
+      }
     }
 
     PlanetPosition? asc;
@@ -337,6 +354,7 @@ class NatalChartService {
       houseNote: note,
       elementCounts: elements,
       aspects: _findAspects([...planets, if (asc != null) asc, if (mc != null) mc]),
+      warnings: warnings,
     );
   }
 
