@@ -450,12 +450,20 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
       ],
 
       // Дополнительные точки.
-      if (chart.extras.isNotEmpty) ...[
+      if (chart.extras.isNotEmpty || chart.warnings.isNotEmpty) ...[
         const SizedBox(height: 24),
         const Text('Дополнительные точки',
             style: TextStyle(color: AppColors.goldBright, fontSize: 16)),
         const SizedBox(height: 12),
         ...chart.extras.map(_buildExtraCard),
+        for (final warning in chart.warnings)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Не удалось рассчитать — $warning',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11, fontStyle: FontStyle.italic),
+            ),
+          ),
       ],
 
       // Дома.
