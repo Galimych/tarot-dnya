@@ -156,11 +156,17 @@ class NatalChartService {
   static Future<void> _ensureInitialized() async {
     if (_initialized) return;
     tzdata.initializeTimeZones();
-    await Sweph.init(epheAssets: [
-      "packages/sweph/assets/ephe/sepl_18.se1",
-      "packages/sweph/assets/ephe/semo_18.se1",
-      "packages/sweph/assets/ephe/seas_18.se1",
-    ]);
+    await Sweph.init(
+      epheAssets: [
+        "packages/sweph/assets/ephe/sepl_18.se1",
+        "packages/sweph/assets/ephe/semo_18.se1",
+        "packages/sweph/assets/ephe/seas_18.se1",
+      ],
+      // Папка, куда копируются файлы эфемерид и откуда библиотека их читает.
+      // Без этого параметра она искала файлы по пути по умолчанию
+      // (/users/ephe/) и не находила — из-за этого не считался Хирон.
+      epheFilesPath: 'ephe_files',
+    );
     _initialized = true;
   }
 
