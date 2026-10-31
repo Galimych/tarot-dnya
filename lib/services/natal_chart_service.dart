@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'dart:math';
+import 'package:path_provider/path_provider.dart';
 import 'package:sweph/sweph.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -123,6 +125,10 @@ class NatalChart {
 class NatalChartService {
   static bool _initialized = false;
 
+  /// Где лежат файлы эфемерид и сколько их — показывается в сообщении об
+  /// ошибке, если какая-то точка не рассчиталась (для диагностики).
+  static String? _epheDebug;
+
   static const zodiacSigns = [
     'Овен', 'Телец', 'Близнецы', 'Рак', 'Лев', 'Дева',
     'Весы', 'Скорпион', 'Стрелец', 'Козерог', 'Водолей', 'Рыбы',
@@ -167,6 +173,25 @@ class NatalChartService {
       // (/users/ephe/) и не находила — из-за этого не считался Хирон.
       epheFilesPath: 'ephe_files',
     );
+
+    // Подстраховка: явно указываем библиотеке папку с файлами эфемерид и
+    // записываем, что в ней лежит. Без этого Хирон (ему нужен файл
+    // seas_18.se1, запасного расчёта нет) не считается.
+    try {
+      final support = await getApplicationSupportDirectory();
+      final dir = '${support.path}/ephe_files';
+      final folder = Directory(dir);
+      final names = folder.existsSync()
+          ? folder.listSync().map((e) => e.path.split('/').last).toList()
+          : <String>[];
+      _epheDebug = 'папка $dir, файлов: ${names.length} (${names.join(', ')})';
+      if (names.isNotEmpty) {
+        Sweph.swe_set_ephe_path(dir);
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+    } catch (e) {
+      _epheDebug = 'не удалось проверить папку эфемерид: $e';
+    }
     _initialized = true;
   }
 
@@ -333,7 +358,7 @@ class NatalChartService {
           ));
         }
       } catch (e) {
-        warnings.add('$name: $e');
+        warnings.add('$name: $e${_epheDebug == null ? '' : ' [$_epheDebug]'}');
       }
     }
 
