@@ -1,7 +1,7 @@
 name: tarot_dnya
 description: "Таро дня — ежедневные карты и предсказания"
 publish_to: 'none'
-version: 1.0.0+33
+version: 1.0.0+34
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -21,6 +21,7 @@ dependencies:
   flutter_local_notifications: ^18.0.1
   timezone: ^0.9.4
   sweph: ^4.1.0+2.10.3
+  path_provider: ^2.1.4
 
 dev_dependencies:
   flutter_test:
