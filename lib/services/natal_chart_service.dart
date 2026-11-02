@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'package:sweph/sweph.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
@@ -174,23 +175,36 @@ class NatalChartService {
       epheFilesPath: 'ephe_files',
     );
 
-    // Подстраховка: явно указываем библиотеке папку с файлами эфемерид и
-    // записываем, что в ней лежит. Без этого Хирон (ему нужен файл
-    // seas_18.se1, запасного расчёта нет) не считается.
+    // Пакет sweph сам не копирует файлы эфемерид в папку приложения
+    // (по диагностике папка оставалась пустой), поэтому копируем их вручную
+    // из ресурсов пакета и явно указываем библиотеке путь. Без файла
+    // seas_18.se1 не считается Хирон — запасного расчёта для него нет.
     try {
       final support = await getApplicationSupportDirectory();
       final dir = '${support.path}/ephe_files';
-      final folder = Directory(dir);
-      final names = folder.existsSync()
-          ? folder.listSync().map((e) => e.path.split('/').last).toList()
-          : <String>[];
-      _epheDebug = 'папка $dir, файлов: ${names.length} (${names.join(', ')})';
-      if (names.isNotEmpty) {
-        Sweph.swe_set_ephe_path(dir);
-        await Future.delayed(const Duration(milliseconds: 300));
+      await Directory(dir).create(recursive: true);
+
+      for (final name in const ['sepl_18.se1', 'semo_18.se1', 'seas_18.se1']) {
+        final file = File('$dir/$name');
+        if (!file.existsSync() || file.lengthSync() == 0) {
+          final data = await rootBundle.load('packages/sweph/assets/ephe/$name');
+          await file.writeAsBytes(
+            data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
+            flush: true,
+          );
+        }
       }
+
+      Sweph.swe_set_ephe_path(dir);
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      final names = Directory(dir)
+          .listSync()
+          .map((e) => '${e.path.split('/').last} (${File(e.path).lengthSync() ~/ 1024} КБ)')
+          .toList();
+      _epheDebug = 'папка $dir, файлов: ${names.length} (${names.join(', ')})';
     } catch (e) {
-      _epheDebug = 'не удалось проверить папку эфемерид: $e';
+      _epheDebug = 'не удалось подготовить файлы эфемерид: $e';
     }
     _initialized = true;
   }
