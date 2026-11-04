@@ -163,27 +163,19 @@ class NatalChartService {
   static Future<void> _ensureInitialized() async {
     if (_initialized) return;
     tzdata.initializeTimeZones();
-    await Sweph.init(
-      epheAssets: [
-        "packages/sweph/assets/ephe/sepl_18.se1",
-        "packages/sweph/assets/ephe/semo_18.se1",
-        "packages/sweph/assets/ephe/seas_18.se1",
-      ],
-      // Папка, куда копируются файлы эфемерид и откуда библиотека их читает.
-      // Без этого параметра она искала файлы по пути по умолчанию
-      // (/users/ephe/) и не находила — из-за этого не считался Хирон.
-      epheFilesPath: 'ephe_files',
-    );
 
-    // Пакет sweph сам не копирует файлы эфемерид в папку приложения
-    // (по диагностике папка оставалась пустой), поэтому копируем их вручную
-    // из ресурсов пакета и явно указываем библиотеке путь. Без файла
-    // seas_18.se1 не считается Хирон — запасного расчёта для него нет.
+    // Файлы эфемерид кладём в папку приложения. ВАЖНО: путь должен быть
+    // полным. Относительный путь пакет использует от корня системы, где
+    // писать нельзя (Read-only file system), и расчёт Хирона не работает.
+    String? dir;
+    final notes = <String>[];
     try {
       final support = await getApplicationSupportDirectory();
-      final dir = '${support.path}/ephe_files';
+      dir = '${support.path}/ephe_files';
       await Directory(dir).create(recursive: true);
 
+      // Пакет сам файлы в папку не копирует (проверено на телефоне),
+      // поэтому копируем их из ресурсов пакета вручную.
       for (final name in const ['sepl_18.se1', 'semo_18.se1', 'seas_18.se1']) {
         final file = File('$dir/$name');
         if (!file.existsSync() || file.lengthSync() == 0) {
@@ -194,18 +186,40 @@ class NatalChartService {
           );
         }
       }
-
-      Sweph.swe_set_ephe_path(dir);
-      await Future.delayed(const Duration(milliseconds: 300));
-
-      final names = Directory(dir)
-          .listSync()
-          .map((e) => '${e.path.split('/').last} (${File(e.path).lengthSync() ~/ 1024} КБ)')
-          .toList();
-      _epheDebug = 'папка $dir, файлов: ${names.length} (${names.join(', ')})';
     } catch (e) {
-      _epheDebug = 'не удалось подготовить файлы эфемерид: $e';
+      notes.add('копирование файлов: $e');
+      dir = null;
     }
+
+    await Sweph.init(
+      epheAssets: [
+        "packages/sweph/assets/ephe/sepl_18.se1",
+        "packages/sweph/assets/ephe/semo_18.se1",
+        "packages/sweph/assets/ephe/seas_18.se1",
+      ],
+      epheFilesPath: dir,
+    );
+
+    // Явно указываем библиотеке путь к файлам (на случай, если init сам
+    // его не выставил).
+    if (dir != null) {
+      try {
+        Sweph.swe_set_ephe_path(dir);
+        await Future.delayed(const Duration(milliseconds: 300));
+      } catch (e) {
+        notes.add('swe_set_ephe_path: $e');
+      }
+      try {
+        final names = Directory(dir)
+            .listSync()
+            .map((e) => '${e.path.split('/').last} (${File(e.path).lengthSync() ~/ 1024} КБ)')
+            .toList();
+        notes.add('папка $dir, файлов: ${names.length} (${names.join(', ')})');
+      } catch (e) {
+        notes.add('не удалось прочитать папку: $e');
+      }
+    }
+    _epheDebug = notes.isEmpty ? null : notes.join('; ');
     _initialized = true;
   }
 
