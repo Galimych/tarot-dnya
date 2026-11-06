@@ -186,6 +186,12 @@ class NatalChartService {
           );
         }
       }
+
+      // Функция swe_set_ephe_path в пакете до самой библиотеки не доходит
+      // (путь поиска остаётся стандартным), зато этот путь начинается с '.',
+      // то есть с текущей рабочей папки процесса. Делаем рабочей нашу папку
+      // с файлами, и библиотека находит их сама.
+      Directory.current = dir;
     } catch (e) {
       notes.add('копирование файлов: $e');
       dir = null;
@@ -214,7 +220,7 @@ class NatalChartService {
             .listSync()
             .map((e) => '${e.path.split('/').last} (${File(e.path).lengthSync() ~/ 1024} КБ)')
             .toList();
-        notes.add('папка $dir, файлов: ${names.length} (${names.join(', ')})');
+        notes.add('рабочая папка ${Directory.current.path}, файлов: ${names.length} (${names.join(', ')})');
       } catch (e) {
         notes.add('не удалось прочитать папку: $e');
       }
