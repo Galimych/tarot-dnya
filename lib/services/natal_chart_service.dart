@@ -276,13 +276,22 @@ class NatalChartService {
   static double _longitude(double jd, HeavenlyBody body) =>
       Sweph.swe_calc_ut(jd, body, SwephFlag.SEFLG_SWIEPH).longitude % 360;
 
-  /// Ретроградность определяем сравнением положения чуть до и чуть после
-  /// момента рождения — так не нужны дополнительные флаги расчёта скорости.
+  /// Ретроградность определяем по знаку скорости планеты по долготе —
+  /// так делают астрологические программы. Если пакет не отдаст скорость,
+  /// сравниваем положение за сутки до и после момента рождения (окно
+  /// в сутки, а не в несколько минут: для медленных тел вроде Хирона
+  /// слишком короткий шаг тонет в погрешности).
   static bool _isRetrograde(double jd, HeavenlyBody body) {
-    final before = _longitude(jd - 0.05, body);
-    final after = _longitude(jd + 0.05, body);
-    final delta = ((after - before + 540) % 360) - 180;
-    return delta < 0;
+    try {
+      final dynamic result = Sweph.swe_calc_ut(jd, body, SwephFlag.SEFLG_SPEED);
+      final double speed = result.speedInLongitude;
+      return speed < 0;
+    } catch (_) {
+      final before = _longitude(jd - 1, body);
+      final after = _longitude(jd + 1, body);
+      final delta = ((after - before + 540) % 360) - 180;
+      return delta < 0;
+    }
   }
 
   static int _houseOf(double lon, List<double> cusps) {
