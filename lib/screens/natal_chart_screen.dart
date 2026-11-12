@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/cities_data.dart';
 import '../data/natal_interpretations.dart';
+import '../data/natal_texts.dart';
 import '../services/natal_chart_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/natal_wheel.dart';
@@ -390,7 +391,7 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
           title: 'Середина неба (MC)',
           point: mc,
           general: midheavenGeneral,
-          specific: signStyle[mc.zodiacSign] ?? '',
+          specific: midheavenInSign[mc.signIndex],
         ),
         Text(
           'Десцендент (DSC) — ${NatalChartService.zodiacSigns[(asc.signIndex + 6) % 12]}, '
@@ -443,6 +444,9 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
           style: TextStyle(color: AppColors.goldBright, fontSize: 16)),
       const SizedBox(height: 12),
       ...chart.planets.map(_buildPlanetCard),
+      const SizedBox(height: 4),
+      const Text(generationalNote,
+          style: TextStyle(color: AppColors.textMuted, fontSize: 11, fontStyle: FontStyle.italic)),
       if (hasRetro) ...[
         const SizedBox(height: 4),
         const Text(retrogradeNote,
@@ -591,19 +595,33 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
               ),
             ],
           ),
-          if (p.house > 0) ...[
-            const SizedBox(height: 6),
-            Text(
-              'В ${p.house} доме: ${houseThemes[p.house - 1]}.',
-              style: const TextStyle(color: AppColors.goldBright, fontSize: 12, height: 1.4),
-            ),
-          ],
           const SizedBox(height: 8),
           Text(planetMeaning[p.planetName] ?? '',
-              style: const TextStyle(color: AppColors.textWarm, fontSize: 12, height: 1.45)),
-          const SizedBox(height: 6),
-          Text(signStyle[p.zodiacSign] ?? '',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.45)),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.4, fontStyle: FontStyle.italic)),
+          const SizedBox(height: 8),
+          Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                text: 'В знаке ${p.zodiacSign}. ',
+                style: const TextStyle(color: AppColors.goldBright),
+              ),
+              TextSpan(text: planetInSign[p.planetName]?[p.signIndex] ?? ''),
+            ]),
+            style: const TextStyle(color: AppColors.textWarm, fontSize: 12, height: 1.45),
+          ),
+          if (p.house > 0) ...[
+            const SizedBox(height: 8),
+            Text.rich(
+              TextSpan(children: [
+                TextSpan(
+                  text: 'В ${p.house} доме (${houseThemes[p.house - 1]}). ',
+                  style: const TextStyle(color: AppColors.goldBright),
+                ),
+                TextSpan(text: planetInHouse[p.planetName]?[p.house - 1] ?? ''),
+              ]),
+              style: const TextStyle(color: AppColors.textWarm, fontSize: 12, height: 1.45),
+            ),
+          ],
         ],
       ),
     );
@@ -649,6 +667,11 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
           const SizedBox(height: 8),
           Text(extraMeaning[p.planetName] ?? '',
               style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.45)),
+          if (p.planetName == 'Северный узел') ...[
+            const SizedBox(height: 6),
+            Text(northNodeInSign[p.signIndex],
+                style: const TextStyle(color: AppColors.textWarm, fontSize: 12, height: 1.45)),
+          ],
         ],
       ),
     );
@@ -713,8 +736,8 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
               style: const TextStyle(color: AppColors.textWarm, fontSize: 13),
             ),
             const SizedBox(height: 3),
-            Text(aspect.type.meaning,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+            Text(aspectDescription(aspect.a.planetName, aspect.b.planetName, aspect.type.name),
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4)),
           ],
         ),
       ),
