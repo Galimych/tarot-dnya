@@ -6,6 +6,7 @@ import '../data/natal_interpretations.dart';
 import '../data/natal_texts.dart';
 import '../services/natal_chart_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/aspect_grid.dart';
 import '../widgets/natal_wheel.dart';
 
 class NatalChartScreen extends StatefulWidget {
@@ -400,6 +401,8 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
         ),
       ],
 
+      ..._buildKeyFeatures(chart),
+
       // Баланс стихий.
       const SizedBox(height: 24),
       const Text('Баланс стихий', style: TextStyle(color: AppColors.goldBright, fontSize: 16)),
@@ -437,6 +440,7 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
       const SizedBox(height: 4),
       Text(elementMeaning[dominant],
           style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4)),
+      ..._buildModalities(chart),
 
       // Планеты.
       const SizedBox(height: 28),
@@ -489,15 +493,23 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
       const Text('Аспекты', style: TextStyle(color: AppColors.goldBright, fontSize: 16)),
       const SizedBox(height: 6),
       const Text(
-        'Аспекты — это углы между планетами и осями карты. Они показывают, как разные части твоей личности взаимодействуют друг с другом.',
-        style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+        'Аспекты — это углы между планетами и осями карты. Они показывают, как разные части твоей личности взаимодействуют друг с другом. Орбис — отклонение от точного угла: чем он меньше, тем сильнее аспект.',
+        style: TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
       ),
       const SizedBox(height: 12),
-      if (chart.aspects.isEmpty)
+      _buildAspectLegend(),
+      if (chart.aspects.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        const Text('Таблица аспектов', style: TextStyle(color: AppColors.goldBright, fontSize: 14)),
+        const SizedBox(height: 8),
+        AspectGrid(chart: chart),
+        const SizedBox(height: 18),
+        const Text('Все аспекты', style: TextStyle(color: AppColors.goldBright, fontSize: 14)),
+        const SizedBox(height: 8),
+        ...chart.aspects.map(_buildAspectTile),
+      ] else
         const Text('Заметных аспектов не найдено.',
-            style: TextStyle(color: AppColors.textMuted, fontSize: 13))
-      else
-        ...chart.aspects.take(14).map(_buildAspectTile),
+            style: TextStyle(color: AppColors.textMuted, fontSize: 13)),
 
       const SizedBox(height: 20),
       Text(
@@ -667,9 +679,9 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
           const SizedBox(height: 8),
           Text(extraMeaning[p.planetName] ?? '',
               style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.45)),
-          if (p.planetName == 'Северный узел') ...[
+          if (_extraSignText(p) != null) ...[
             const SizedBox(height: 6),
-            Text(northNodeInSign[p.signIndex],
+            Text(_extraSignText(p)!,
                 style: const TextStyle(color: AppColors.textWarm, fontSize: 12, height: 1.45)),
           ],
         ],
@@ -708,6 +720,9 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
             const SizedBox(height: 3),
             Text(houseThemes[index],
                 style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4)),
+            const SizedBox(height: 3),
+            Text('Сфера проявляется ${houseCuspFlavor[signIndex]}.',
+                style: const TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.4, fontStyle: FontStyle.italic)),
             if (inHouse.isNotEmpty) ...[
               const SizedBox(height: 3),
               Text('Здесь: ${inHouse.join(', ')}',
@@ -720,6 +735,7 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
   }
 
   Widget _buildAspectTile(ChartAspect aspect) {
+    final isTight = aspect.deviation < 1.0;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
@@ -731,17 +747,205 @@ class _NatalChartScreenState extends State<NatalChartScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${aspect.a.planetName} — ${aspect.type.name} — ${aspect.b.planetName}',
-              style: const TextStyle(color: AppColors.textWarm, fontSize: 13),
+            Row(
+              children: [
+                AspectSymbol(angle: aspect.type.angle, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${aspect.a.planetName} — ${aspect.type.name} — ${aspect.b.planetName}',
+                    style: const TextStyle(color: AppColors.textWarm, fontSize: 13),
+                  ),
+                ),
+                Text(
+                  'орбис ${NatalChartService.formatDegrees(aspect.deviation)}',
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
+                ),
+              ],
             ),
-            const SizedBox(height: 3),
-            Text(aspectDescription(aspect.a.planetName, aspect.b.planetName, aspect.type.name),
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4)),
+            const SizedBox(height: 4),
+            Text(
+              aspectDescription(aspect.a.planetName, aspect.b.planetName, aspect.type.name),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4),
+            ),
+            if (isTight) ...[
+              const SizedBox(height: 4),
+              const Text(
+                'Точный аспект: его влияние выражено особенно сильно.',
+                style: TextStyle(color: AppColors.goldBright, fontSize: 11, fontStyle: FontStyle.italic),
+              ),
+            ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildAspectLegend() {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final t in aspectTypes)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AspectSymbol(angle: t.angle, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(children: [
+                        TextSpan(
+                          text: '${t.name} (${t.angle.round()}°, орбис до ${t.orb.round()}°). ',
+                          style: const TextStyle(color: AppColors.goldBright),
+                        ),
+                        TextSpan(text: aspectTypeLine[t.name] ?? ''),
+                      ]),
+                      style: const TextStyle(color: AppColors.textMuted, fontSize: 11, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String? _extraSignText(PlanetPosition p) {
+    switch (p.planetName) {
+      case 'Северный узел':
+        return northNodeInSign[p.signIndex];
+      case 'Южный узел':
+        return southNodeInSign[p.signIndex];
+      case 'Лилит':
+        return lilithInSign[p.signIndex];
+      case 'Хирон':
+        return chironInSign[p.signIndex];
+    }
+    return null;
+  }
+
+  /// Модальности: кардинальные, фиксированные, мутабельные знаки.
+  List<Widget> _buildModalities(NatalChart chart) {
+    final counts = [0, 0, 0];
+    for (final p in chart.planets) {
+      counts[p.signIndex % 3]++;
+    }
+    var dominant = 0;
+    for (var i = 1; i < 3; i++) {
+      if (counts[i] > counts[dominant]) dominant = i;
+    }
+    final maxCount = counts.reduce((a, b) => a > b ? a : b);
+
+    return [
+      const SizedBox(height: 22),
+      const Text('Модальности', style: TextStyle(color: AppColors.goldBright, fontSize: 16)),
+      const SizedBox(height: 12),
+      for (var i = 0; i < 3; i++)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 112,
+                child: Text(modalityNames[i],
+                    style: const TextStyle(color: AppColors.textWarm, fontSize: 13)),
+              ),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: maxCount == 0 ? 0 : counts[i] / maxCount,
+                    minHeight: 8,
+                    backgroundColor: Colors.white.withOpacity(0.07),
+                    valueColor: AlwaysStoppedAnimation(
+                      i == dominant ? AppColors.gold : AppColors.indigo,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text('${counts[i]}', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+            ],
+          ),
+        ),
+      const SizedBox(height: 4),
+      Text(modalityMeaning[dominant],
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 12, height: 1.4)),
+    ];
+  }
+
+  Widget _keyItem(String title, String text) {
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(color: AppColors.goldBright, fontSize: 14)),
+          const SizedBox(height: 6),
+          Text(text, style: const TextStyle(color: AppColors.textWarm, fontSize: 12, height: 1.45)),
+        ],
+      ),
+    );
+  }
+
+  /// Ключевые особенности: управитель асцендента и скопления планет.
+  List<Widget> _buildKeyFeatures(NatalChart chart) {
+    final items = <Widget>[];
+
+    final asc = chart.ascendant;
+    if (asc != null) {
+      final rulers = signRulers[asc.signIndex];
+      for (var i = 0; i < rulers.length; i++) {
+        final found = chart.planets.where((p) => p.planetName == rulers[i]);
+        if (found.isEmpty) continue;
+        final ruler = found.first;
+        final kind = rulers.length > 1 ? (i == 0 ? ' (традиционный)' : ' (современный)') : '';
+        final where = ruler.house > 0
+            ? ' в ${ruler.house} доме (${houseThemes[ruler.house - 1]})'
+            : '';
+        items.add(_keyItem(
+          'Управитель асцендента$kind: ${ruler.planetName}',
+          '${ruler.planetName} стоит в знаке ${ruler.zodiacSign}$where. '
+          'Это ключевая планета карты: сфера её дома показывает, куда направлена твоя жизненная энергия.',
+        ));
+      }
+    }
+
+    // Скопления: три и более планеты в одном знаке или в одном доме.
+    final bySign = <int, List<PlanetPosition>>{};
+    final byHouse = <int, List<PlanetPosition>>{};
+    for (final p in chart.planets) {
+      bySign.putIfAbsent(p.signIndex, () => []).add(p);
+      if (p.house > 0) byHouse.putIfAbsent(p.house, () => []).add(p);
+    }
+    bySign.forEach((signIndex, list) {
+      if (list.length >= 3) {
+        items.add(_keyItem(
+          'Скопление в знаке ${NatalChartService.zodiacSigns[signIndex]}: ${list.map((p) => p.planetName).join(', ')}',
+          'Несколько планет в одном знаке: черты этого знака выражены в тебе особенно сильно и окрашивают целые сферы жизни.',
+        ));
+      }
+    });
+    byHouse.forEach((house, list) {
+      if (list.length >= 3) {
+        items.add(_keyItem(
+          'Скопление в $house доме: ${list.map((p) => p.planetName).join(', ')}',
+          'Много планет в одном доме: сфера «${houseThemes[house - 1]}» одна из главных тем твоей жизни, сюда направлено много энергии.',
+        ));
+      }
+    });
+
+    if (items.isEmpty) return [];
+    return [
+      const SizedBox(height: 24),
+      const Text('Ключевые особенности карты',
+          style: TextStyle(color: AppColors.goldBright, fontSize: 16)),
+      const SizedBox(height: 12),
+      ...items,
+    ];
   }
 
   void _showUtcOffsetPicker() {
