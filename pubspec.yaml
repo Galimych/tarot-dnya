@@ -1,7 +1,7 @@
 name: tarot_dnya
 description: "Таро дня — ежедневные карты и предсказания"
 publish_to: 'none'
-version: 1.0.0+40
+version: 1.0.0+42
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -13,7 +13,6 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
   shared_preferences: ^2.2.3
-  google_fonts: ^6.2.1
   share_plus: ^10.1.4
   screenshot: ^3.0.0
   intl: any
@@ -37,6 +36,26 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  # Шрифты встроены в приложение (лицензия SIL OFL 1.1, тексты лицензий лежат
+  # рядом), поэтому из интернета они не загружаются.
+  fonts:
+    - family: NunitoSans
+      fonts:
+        - asset: assets/fonts/NunitoSans-400.ttf
+        - asset: assets/fonts/NunitoSans-500.ttf
+          weight: 500
+        - asset: assets/fonts/NunitoSans-600.ttf
+          weight: 600
+        - asset: assets/fonts/NunitoSans-700.ttf
+          weight: 700
+    - family: CormorantGaramond
+      fonts:
+        - asset: assets/fonts/CormorantGaramond-400.ttf
+        - asset: assets/fonts/CormorantGaramond-Italic-400.ttf
+          style: italic
+  assets:
+    - assets/fonts/OFL_NunitoSans.txt
+    - assets/fonts/OFL_CormorantGaramond.txt
 
 # Версии плагина хранилища 2.4.26+ (Kotlin Pigeon) на нашей сборке падают при
 # запуске с NoSuchMethodError. Берём последнюю версию старой реализации.
