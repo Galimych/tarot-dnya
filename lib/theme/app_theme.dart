@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Цветовая палитра и типографика — тёмная мистическая эстетика.
 class AppColors {
@@ -15,6 +14,10 @@ class AppColors {
 }
 
 class AppTheme {
+  // Шрифты встроены в приложение (assets/fonts), из интернета не загружаются.
+  static const _serif = 'CormorantGaramond';
+  static const _sans = 'NunitoSans';
+
   static ThemeData get theme {
     return ThemeData(
       useMaterial3: true,
@@ -26,27 +29,31 @@ class AppTheme {
       ),
       textTheme: TextTheme(
         // Заголовки и названия карт — декоративный serif
-        headlineMedium: GoogleFonts.cormorantGaramond(
+        headlineMedium: TextStyle(
+          fontFamily: _serif,
           color: AppColors.textWarm,
           fontSize: 22,
           fontStyle: FontStyle.italic,
         ),
-        titleLarge: GoogleFonts.cormorantGaramond(
+        titleLarge: TextStyle(
+          fontFamily: _serif,
           color: AppColors.goldBright,
           fontSize: 20,
         ),
         // Основной текст — читаемый sans-serif
-        bodyLarge: GoogleFonts.nunitoSans(
+        bodyLarge: TextStyle(
+          fontFamily: _sans,
           color: AppColors.textWarm,
           fontSize: 15,
           height: 1.6,
         ),
-        bodyMedium: GoogleFonts.nunitoSans(
+        bodyMedium: TextStyle(
+          fontFamily: _sans,
           color: AppColors.textMuted,
           fontSize: 13,
         ),
       ),
-      fontFamily: GoogleFonts.nunitoSans().fontFamily,
+      fontFamily: _sans,
     );
   }
 }
